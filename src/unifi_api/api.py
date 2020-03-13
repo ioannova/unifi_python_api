@@ -883,7 +883,7 @@ class UnifiClient(AbstractUnifiSession):
         return self.process_response(r)
 
     @requires_login
-    def stat_deviceBasic(self, site='default'):
+    def stat_deviceBasic(self, site):
         '''
             Get all AP mac's from this site.
             site = 'site code'
@@ -895,7 +895,7 @@ class UnifiClient(AbstractUnifiSession):
         return self.process_response(r)
 
     @requires_login
-    def stat_device(self, site='default', macs=None):
+    def stat_device(self, site, macs=None):
         '''
             List all params from dashboad/clients, include all activeclients, client ap conected, active down/up per client, ip, name, wlan, channel and others stats.
             
@@ -911,39 +911,57 @@ class UnifiClient(AbstractUnifiSession):
         return self.process_response(r)
 
     @requires_login
-    def stat_reportDailySite(self, site='default', date_range, attrs=None):
+    def stat_reportSite(self, site, date_range, interval='daily', attrs=None):
         '''
             This request get total user and traffic per interval
             Required: site, date_range(tuple in datetime)
-            Optional: macs(Array of AP mac's), attrs(aditional filters, default is ["bytes","num_sta","time"])
+            Optional:
+                      macs: Array of AP mac's
+                      date_range: tuple of datetime range
+                      interval: daily, hourly, 5minutes. Default is 'daily'
+                      attrs: aditional filters, default is ["bytes","num_sta","time"]
         '''
+        assert date_range, "date_range is required"
         data = {"start": self.datetemp(date_range[0]), "end": self.datetemp(date_range[1])}
         if (attrs == None):
             data["attrs"] = [
                 "wlan_bytes",
-                "wlan-tx_bytes",
-                "wlan-rx_bytes",
                 "wlan-num_sta",
-                "num_sta",
-                "lan-num_sta",
                 "time"]
         else:
             data["attrs"] = attrs
-        r = self.post(self.endpoint('/api/s/{}/stat/report/daily.site' .format(site)), json=data)
+        r = self.post(self.endpoint('/api/s/{}/stat/report/{}.site' .format(site, interval)), json=data)
         return self.process_response(r)
 
     @requires_login
-    def stat_reportDailyAp(self, site='default', date_range, macs=None):
+    def stat_reportAp(self, site, date_range, macs=None, interval='daily', attrs=None):
         '''
             Required: site, date_range(tuple in datetime)
-            Optional: macs(Array of AP mac's), attrs(aditional filters, default is ["bytes","num_sta","time"])
+            Optional:
+                      date_range: tuple of datetime range
+                      macs: Array of AP mac's
+                      interval: daily, hourly, 5minutes. Default is 'daily'
+                      attrs: Aditional filters, default is ["bytes","num_sta","time"]
         '''
         data = {
             "start": self.datetemp(date_range[0]),
             "end": self.datetemp(date_range[1])}
         if (attrs == None):
-            data["attrs"] = ["bytes","num_sta","time"]
+            data["attrs"] = ["bytes", "num_sta","time"]
         else:
             data["attrs"] = attrs
-        r = self.post(self.endpoint('/api/s/{}/stat/report/daily.ap' .format(site)), json=data)
+        r = self.post(self.endpoint('/api/s/{}/stat/report/{}.ap' .format(site, interval)), json=data)
         return self.process_response(r)
+
+    @requires_login
+    def stat_widgetHealth(self, site):
+        '''
+            List AP's and Switchs adopted, connected, disconnected, pending and disable
+            UAP = AP
+            USW = SWITCH
+            UGW = UNIFI GATEWAY?
+        '''
+        r = self.post(self.endpoint('/api/s/{}/stat/widget/health' .format(site)))
+        return self.process_response(r)
+
+
